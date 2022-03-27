@@ -9,6 +9,7 @@ mod systems;
 use bevy_inspector_egui::RegisterInspectable;
 
 use crate::events::*;
+use bevy::ecs::schedule::StateData;
 use bevy::log;
 use bevy::math::Vec3Swizzles;
 use bevy::prelude::*;
@@ -22,14 +23,29 @@ use resources::BoardOptions;
 use resources::BoardPosition;
 use resources::TileSize;
 
-pub struct BoardPlugin;
+pub struct BoardPlugin<T> {
+    pub running_state: T,
+}
 
-impl Plugin for BoardPlugin {
+impl<T: StateData> Plugin for BoardPlugin<T> {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(Self::create_board)
-            .add_system(systems::input::input_handling)
-            .add_system(systems::uncover::trigger_event_handler)
-            .add_system(systems::uncover::uncover_tiles)
+        app.add_system_set(
+            SystemSet::on_enter(self.running_state.clone())
+                .with_system(Self::create_board),
+        )
+        .add_system_set(
+            SystemSet::on_update(self.running_state.clone())
+                .with_system(systems::input::input_handling)
+                .with_system(systems::uncover::trigger_event_handler),
+        )
+        .add_system_set(
+            SystemSet::on_in_stack_update(self.running_state.clone())
+                .with_system(systems::uncover::uncover_tiles),
+        )
+        .add_system_set(
+            SystemSet::on_exit(self.running_state.clone())
+                .with_system(Self::cleanup_board),
+        )
             .add_event::<TileTriggerEvent>();
 
         #[cfg(feature = "debug")]
@@ -44,7 +60,7 @@ impl Plugin for BoardPlugin {
     }
 }
 
-impl BoardPlugin {
+impl<T> BoardPlugin<T> {
     pub fn create_board(
         mut commands: Commands,
         board_options: Option<Res<BoardOptions>>,
@@ -94,7 +110,7 @@ impl BoardPlugin {
 
         let mut safe_start = None;
 
-        commands
+        let board_entity = commands
             .spawn()
             .insert(Name::new("Board"))
             .insert(Transform::from_translation(board_position))
@@ -124,7 +140,8 @@ impl BoardPlugin {
                     &mut safe_start,
                 );
 
-            });
+            })
+            .id();
 
         if options.safe_start {
             if let Some(entity) = safe_start {
@@ -140,6 +157,7 @@ impl BoardPlugin {
             },
             tile_size,
             covered_tiles,
+            entity: board_entity,
         })
     }
 
@@ -272,5 +290,10 @@ impl BoardPlugin {
                 };
             }
         }
+    }
+
+    fn cleanup_board(board: Res<Board>, mut commands: Commands) {
+        commands.entity(board.entity).despawn_recursive();
+        commands.remove_resource::<Board>();
     }
 }
