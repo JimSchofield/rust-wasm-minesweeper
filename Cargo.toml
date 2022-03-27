@@ -8,13 +8,23 @@ default = []
 debug = ["board_plugin/debug", "bevy-inspector-egui"]
 
 [dependencies]
-bevy = "0.6.1"
 board_plugin = { path = "board_plugin" }
 bevy-inspector-egui = { version = "0.9", optional = true }
 [workspace]
 members = [
     "board_plugin"
 ]
+
+[dependencies.bevy]
+version = "0.6"
+default-features = false
+features = ["render", "bevy_winit", "png"]
+
+# dependencies for native only
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies.bevy]
+version = "0.6"
+default-features = false
+features = ["x11"]
 
 [profile.dev.package."*"]
 opt-level = 3
