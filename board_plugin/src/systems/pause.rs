@@ -1,4 +1,7 @@
-use bevy::sprite::SpriteBundle;use bevy::prelude::*;
+use bevy::sprite::SpriteBundle;
+use bevy::prelude::*;
+use crate::BoardAssets;
+
 
 #[derive(Component)]
 pub struct PauseGame;
@@ -6,10 +9,8 @@ pub struct PauseGame;
 pub fn pause_game(
     mut commands: Commands,
     window: Res<WindowDescriptor>,
-    asset_server: Res<AssetServer>,
+    board_assets: Res<BoardAssets>,
 ) {
-    let font = asset_server.load("fonts/pixeled.ttf");
-
     commands.spawn()
         .insert(PauseGame)
         .insert(Name::new("Pause Screen"))
@@ -33,7 +34,7 @@ pub fn pause_game(
                 sections: vec![TextSection {
                     value: "Pause".to_string(),
                     style: TextStyle {
-                        font,
+                        font: board_assets.bomb_counter_font.clone(),
                         font_size: 70.0,
                         color: Color::ORANGE,
                     },
