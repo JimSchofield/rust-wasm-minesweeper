@@ -34,6 +34,14 @@ impl<T: StateData> Plugin for BoardPlugin<T> {
                 .with_system(Self::create_board),
         )
         .add_system_set(
+            SystemSet::on_pause(self.running_state.clone())
+                .with_system(systems::pause::pause_game),
+        )
+        .add_system_set(
+            SystemSet::on_resume(self.running_state.clone())
+                .with_system(systems::pause::cleanup_pause_game)
+        )
+        .add_system_set(
             SystemSet::on_update(self.running_state.clone())
                 .with_system(systems::input::input_handling)
                 .with_system(systems::uncover::trigger_event_handler),

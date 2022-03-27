@@ -9,6 +9,7 @@ use bevy_inspector_egui::WorldInspectorPlugin;
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum AppState {
     InGame,
+    Paused,
     Out,
 }
 
@@ -49,6 +50,17 @@ fn state_handler(
     mut state: ResMut<State<AppState>>,
     keys: Res<Input<KeyCode>>,
 ) {
+    if keys.just_pressed(KeyCode::Escape) {
+        log::debug!("pause detected");
+        if state.current() == &AppState::InGame {
+            log::info!("pausing");
+            state.push(AppState::Paused).unwrap();
+        }
+        if state.current() == &AppState::Paused {
+            log::info!("resuming");
+            state.pop().unwrap();
+        }
+    }
     if keys.just_pressed(KeyCode::C) {
         log::debug!("clearing detected!");
         if state.current() == &AppState::InGame {
